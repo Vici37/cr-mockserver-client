@@ -1,0 +1,9 @@
+name: cr-mockserver-client
+version: 0.1.0
+
+authors:
+  - Troy Sornson <troy@sornson.io>
+
+crystal: 1.0.0
+
+license: MIT
