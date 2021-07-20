@@ -1,5 +1,10 @@
-name: cr-mockserver-client
+name: mockserver-client
 version: 0.1.0
+
+development_dependencies:
+  docr:
+    github: Vici37/docr
+    branch: master
 
 authors:
   - Troy Sornson <troy@sornson.io>
