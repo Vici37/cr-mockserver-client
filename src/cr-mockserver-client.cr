@@ -32,15 +32,15 @@ module MockServerClient
     end
 
     def expectation(
-      path : String,
-      method : String,
-      requestBody : String? = nil,
+      path : String? = nil,
+      method : String? = nil,
+      requestBody : BodyMatchers? = nil,
       requestHeaders : Hash(String, Array(String))? = nil,
       requestQueryParams : Hash(String, Array(String))? = nil,
       pathParameters : Hash(String, Array(String))? = nil,
       cookies : Hash(String, String)? = nil,
       responseStatusCode : Int32 = 200,
-      responseBody : String? = nil,
+      responseBody : BodyResponses? = nil,
       responseHeaders : Hash(String, Array(String))? = nil,
       delay : Delay? = nil
     )
