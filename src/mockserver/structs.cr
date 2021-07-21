@@ -7,11 +7,19 @@ module MockServerClient
     id : String? = nil,
     priority : Int32? = nil do
     include JSON::Serializable
+
+    def id!
+      @id.not_nil!
+    end
   end
 
   record ExpectationId,
     id : String do
     include JSON::Serializable
+
+    def initialize(exp : Expectation)
+      @id = exp.id.not_nil!
+    end
   end
 
   alias BodyMatchers = String | JSON::Any | JsonPathBodyMatcher | BinaryBodyMatcher |
@@ -21,8 +29,8 @@ module MockServerClient
   alias BodyResponses = String | JSON::Any | BinaryBodyMatcher | JsonBodyMatcher | StringBodyMatcher | XmlBodyMatcher
 
   record HttpRequest,
-    method : String?,
-    path : String?,
+    method : String? = nil,
+    path : String? = nil,
     body : BodyMatchers? = nil,
     pathParameters : Hash(String, Array(String))? = nil,
     queryStringParameters : Hash(String, Array(String))? = nil,
@@ -39,6 +47,7 @@ module MockServerClient
     body : BodyResponses?,
     headers : Hash(String, Array(String))? = nil,
     cookies : Hash(String, String)? = nil,
+    connectionOptions : ConnectionOptions? = nil,
     delay : Delay? = nil do
     include JSON::Serializable
   end
@@ -58,6 +67,17 @@ module MockServerClient
 
   record Ports,
     ports : Array(Int32) do
+    include JSON::Serializable
+  end
+
+  record ConnectionOptions,
+    suppressContentLengthHeader : Bool? = nil,
+    contentLengthHeaderOverride : Bool? = nil,
+    suppressConnectionHeader : Bool? = nil,
+    chunkSize : Int32? = nil,
+    keepAliveOverride : Bool? = nil,
+    closeSocket : Bool? = nil,
+    closeSocketDelay : Delay? = nil do
     include JSON::Serializable
   end
 
@@ -155,5 +175,24 @@ module MockServerClient
 
     def initialize(@xpath)
     end
+  end
+
+  record Verification,
+    expectationId : ExpectationId? = nil,
+    httpRequest : HttpRequest? = nil,
+    times : VerificationTimes? = nil do
+    include JSON::Serializable
+  end
+
+  record VerificationTimes,
+    atLeast : Int32? = nil,
+    atMost : Int32? = nil do
+    include JSON::Serializable
+  end
+
+  record VerificationSequence,
+    expectationIds : Array(ExpectationId)? = nil,
+    httpRequests : Array(HttpRequest)? = nil do
+    include JSON::Serializable
   end
 end

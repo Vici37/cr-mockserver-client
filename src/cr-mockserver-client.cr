@@ -26,6 +26,11 @@ module MockServerClient
         Array(Expectation).from_json(resp.body)
       when "requests"
         Array(HttpRequest).from_json(resp.body)
+        # when "logs"
+        # TODO
+        # when "recorded_expectations"
+        # TODO
+
       else
         raise "Unsupported or unknown retrieve type #{type}. Supported types are: active_expectations"
       end
@@ -73,6 +78,42 @@ module MockServerClient
       @client.put("/mockserver/bind", nil, p.to_json)
 
       status
+    end
+
+    def verify(expectation : Expectation | HttpRequest | String, atLeast : Int32? = nil, atMost : Int32? = nil)
+      raise "Require to specify atLeast parameter and / or atMost" if atMost.nil? && atLeast.nil?
+
+      if expectation.is_a?(Expectation)
+        resp = @client.put("/mockserver/verify", nil, Verification.new(
+          expectationId: ExpectationId.new(expectation),
+          times: VerificationTimes.new(atMost: atMost, atLeast: atLeast)).to_json
+        )
+      elsif expectation.is_a?(HttpRequest)
+        resp = @client.put("/mockserver/verify", nil, Verification.new(
+          httpRequest: expectation,
+          times: VerificationTimes.new(atMost: atMost, atLeast: atLeast)).to_json
+        )
+      elsif expectation.is_a?(String)
+        resp = @client.put("/mockserver/verify", nil, Verification.new(
+          expectationId: ExpectationId.new(expectation),
+          times: VerificationTimes.new(atMost: atMost, atLeast: atLeast)).to_json
+        )
+      else
+        raise "No handler for type #{expectation.class}"
+      end
+
+      return true if resp.not_nil!.status_code == 202
+      return false if resp.not_nil!.status_code == 406
+      raise "Bad request format: #{resp.body}"
+    end
+
+    def verify_sequence(sequence : Array(HttpRequest))
+      verification = VerificationSequence.new(httpRequests: sequence)
+      resp = @client.put("/mockserver/verifySequence", nil, verification.to_json)
+
+      return true if resp.not_nil!.status_code == 202
+      return false if resp.not_nil!.status_code == 406
+      raise "Bad request format: #{resp.body}"
     end
   end
 end
