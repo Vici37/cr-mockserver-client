@@ -26,11 +26,12 @@ module MockServerClient
         Array(Expectation).from_json(resp.body)
       when "requests"
         Array(HttpRequest).from_json(resp.body)
-        # when "logs"
-        # TODO
-        # when "recorded_expectations"
-        # TODO
-
+      when "logs"
+        resp.body.split("------------------------------------")
+      when "recorded_expectations"
+        Array(Expectation).from_json(resp.body)
+      when "request_responses"
+        Array(RequestResponse).from_json(resp.body)
       else
         raise "Unsupported or unknown retrieve type #{type}. Supported types are: active_expectations"
       end
@@ -107,8 +108,13 @@ module MockServerClient
       raise "Bad request format: #{resp.body}"
     end
 
-    def verify_sequence(sequence : Array(HttpRequest))
-      verification = VerificationSequence.new(httpRequests: sequence)
+    def verify_sequence(sequence : Array(HttpRequest) | Array(Expectation))
+      if sequence.is_a?(Array(HttpRequest))
+        verification = VerificationSequence.new(httpRequests: sequence)
+      elsif sequence.is_a?(Array(Expectation))
+        verification = VerificationSequence.new(httpRequests: sequence.map { |e| e.httpRequest })
+      end
+
       resp = @client.put("/mockserver/verifySequence", nil, verification.to_json)
 
       return true if resp.not_nil!.status_code == 202

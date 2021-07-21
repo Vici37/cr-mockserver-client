@@ -35,9 +35,14 @@ describe MockServerClient do
       method: "POST",
       responseBody: "success!"
     )[0]
+
+    client.verify_sequence([exp1, exp2, exp3]).should be_false
     regular_client.post("/hello/world")
+    client.verify_sequence([exp1, exp2, exp3]).should be_false
     regular_client.post("/goodbye/world")
+    client.verify_sequence([exp1, exp2, exp3]).should be_false
     regular_client.post("/world")
+    client.verify_sequence([exp1, exp2, exp3]).should be_true
 
     client.verify_sequence([
       MockServerClient::HttpRequest.new(path: "/hello/world"),

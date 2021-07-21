@@ -195,4 +195,11 @@ module MockServerClient
     httpRequests : Array(HttpRequest)? = nil do
     include JSON::Serializable
   end
+
+  record RequestResponse,
+    timestamp : String,
+    httpRequest : HttpRequest,
+    httpResponse : HttpResponse do
+    include JSON::Serializable
+  end
 end
