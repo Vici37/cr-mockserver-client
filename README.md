@@ -2,6 +2,8 @@
 
 This library aims to provide a crystal library that can interact with [MockServer](https://www.mock-server.com/#what-is-mockserver).
 
+Note: development on this library requires docker, as a mockserver container is used during testing.
+
 ## Installation
 
 1. Add the dependency to your `shard.yml`:
@@ -17,7 +19,7 @@ This library aims to provide a crystal library that can interact with [MockServe
 ## Usage
 
 ```crystal
-require "cr-mockserver-client"
+require "mockserver-client"
 ```
 
 TODO: Write usage instructions here

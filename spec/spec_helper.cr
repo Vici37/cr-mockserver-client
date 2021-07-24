@@ -9,7 +9,7 @@ mockserver_id = UUID.random.to_s
 Spec.before_suite do
   containers = Docr.command.ps.execute
 
-  unless containers.find { |c| c.image == "mockserver/mockserver:latest" }
+  unless containers.find { |c| c.image =~ /mockserver\/mockserver(:latest)?/ && c.ports.find { |p| p.public_port == 1090 } }
     Docr.command.run
       .image("mockserver/mockserver:latest")
       .port("1090", "1080/tcp")

@@ -2,14 +2,41 @@ require "json"
 
 module MockServerClient
   record Expectation,
-    httpRequest : HttpRequest,
-    httpResponse : HttpResponse,
+    httpRequest : HttpRequest? = nil,
+    httpResponse : HttpResponse? = nil,
+    httpForward : HttpForward? = nil,
+    httpOverrideForward : HttpOverrideForwardRequest? = nil,
     id : String? = nil,
+    times : Times? = nil,
     priority : Int32? = nil do
     include JSON::Serializable
 
+    def httpRequest!
+      @httpRequest.not_nil!
+    end
+
+    def httpResponse!
+      @httpResponse.not_nil!
+    end
+
+    def httpForward!
+      @httpForward.not_nil!
+    end
+
+    def httpOverrideForward!
+      @httpOverrideForward.not_nil!
+    end
+
     def id!
       @id.not_nil!
+    end
+
+    def times!
+      @times.not_nil!
+    end
+
+    def priority!
+      @priority.not_nil!
     end
   end
 
@@ -43,8 +70,8 @@ module MockServerClient
   end
 
   record HttpResponse,
-    statusCode : Int32,
-    body : BodyResponses?,
+    statusCode : Int32? = nil,
+    body : BodyResponses? = nil,
     headers : Hash(String, Array(String))? = nil,
     cookies : Hash(String, String)? = nil,
     connectionOptions : ConnectionOptions? = nil,
@@ -200,6 +227,26 @@ module MockServerClient
     timestamp : String,
     httpRequest : HttpRequest,
     httpResponse : HttpResponse do
+    include JSON::Serializable
+  end
+
+  record Times,
+    remainingTimes : Int32? = nil,
+    unlimited : Bool? = true do
+    include JSON::Serializable
+  end
+
+  record HttpForward,
+    host : String? = nil,
+    port : Int32? = nil,
+    scheme : String? = nil do
+    include JSON::Serializable
+  end
+
+  record HttpOverrideForwardRequest,
+    delay : Delay? = nil,
+    httpRequest : HttpRequest? = nil,
+    httpRespons : HttpResponse? = nil do
     include JSON::Serializable
   end
 end

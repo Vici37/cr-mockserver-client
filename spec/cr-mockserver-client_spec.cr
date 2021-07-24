@@ -13,7 +13,7 @@ describe MockServerClient do
 
     resp.size.should eq 1
     resp[0].id.should_not be_nil
-    resp[0].httpRequest.path.should eq "/hello/world"
+    resp[0].httpRequest!.path.should eq "/hello/world"
 
     exps = client.retrieve("active_expectations")
     exps.size.should eq 1
@@ -29,11 +29,11 @@ describe MockServerClient do
   end
 
   it "checks port bindings and binds to new ones" do
-    stats = client.status
-    stats.ports.should eq [1080]
+    orig_stats = client.status
 
-    stats = client.bind(1081)
-    stats.ports.should eq [1080, 1081]
+    stats = client.bind(0)
+
+    (stats.ports - orig_stats.ports).size.should eq 1
   end
 
   it "gets requests" do
@@ -49,7 +49,7 @@ describe MockServerClient do
 
   it "retrieves logs, recorded_expectations, and request_responses" do
     regular_client.get("/")
-    client.expectation(path: "/nope")
+    client.expectation(path: "/nope", responseStatusCode: 200)
     regular_client.get("/nope")
     req_resps = client.retrieve("request_responses").as(Array(MockServerClient::RequestResponse))
 
@@ -63,5 +63,17 @@ describe MockServerClient do
     client.retrieve("recorded_expectations").should be_empty # no proxy expectations
 
     client.retrieve("logs").empty?.should be_false
+  end
+
+  it "forwards" do
+    client.expectation(
+      path: "/",
+      forwardHost: "google.com",
+      forwardPort: 443,
+      forwardScheme: "HTTPS"
+    )
+
+    resp = regular_client.get("/")
+    (resp.body.size > 0).should be_true
   end
 end
