@@ -13,7 +13,7 @@ Note: development on this library requires docker, as a mockserver container is 
 
    ```yaml
    dependencies:
-     cr-mockserver-client:
+     mockserver-client:
        github: vici37/cr-mockserver-client
    ```
 
