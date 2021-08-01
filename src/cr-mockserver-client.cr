@@ -5,24 +5,23 @@ module MockServerClient
   end
 
   class Client
-    def initialize(mockserver_url : String = "localhost", port : Int32 = 1080)
-      @client = HTTP::Client.new(mockserver_url, port)
+    def initialize(@mockserver_url : String = "localhost", @port : Int32 = 1080)
     end
 
     def clear(id : String)
-      @client.put("/mockserver/clear", ExpectationId.new(id: id).to_json)
+      client_put("/mockserver/clear", ExpectationId.new(id: id).to_json)
     end
 
     def clear(request : HttpRequest)
-      @client.put("/mockserver/clear", request.to_json)
+      client_put("/mockserver/clear", request.to_json)
     end
 
     def reset
-      @client.put("/mockserver/reset")
+      client_put("/mockserver/reset")
     end
 
     def retrieve(type : String = "requests")
-      resp = @client.put("/mockserver/retrieve?type=#{type}")
+      resp = client_put("/mockserver/retrieve?type=#{type}")
 
       case type
       when "active_expectations"
@@ -146,7 +145,7 @@ module MockServerClient
     SAFE_STATUS_CODE = [406] + (200..299).to_a
 
     private def client_put(path, body = nil)
-      resp = @client.put(path, nil, body)
+      resp = HTTP::Client.put("#{@mockserver_url}:#{@port}#{path}", nil, body)
       return resp if SAFE_STATUS_CODE.includes?(resp.status_code)
       raise MockServerApiException.new(resp.body)
     end
