@@ -20,8 +20,28 @@ module MockServerClient
       client_put("/mockserver/reset")
     end
 
-    def retrieve(type : String = "requests")
-      resp = client_put("/mockserver/retrieve?type=#{type}")
+    def retrieve_active_expectations
+      retrieve("active_expectations").as(Array(Expectation))
+    end
+
+    def retrieve_requests(exp : Expectation? = nil)
+      retrieve("requests", exp.nil? ? nil : exp.to_json).as(Array(HttpRequest))
+    end
+
+    def retrieve_logs
+      retrieve("logs").as(Array(String))
+    end
+
+    def retrievie_recorded_expectations(exp : Expectation? = nil)
+      retrieve("recorded_expectations", exp.nil? ? nil : exp.to_json).as(Array(Expectation))
+    end
+
+    def retrieve_request_responses(exp : Expectation? = nil)
+      retrieve("request_responses", exp.nil? ? nil : exp.to_json).as(Array(RequestResponse))
+    end
+
+    def retrieve(type : String = "requests", body = nil)
+      resp = client_put("/mockserver/retrieve?type=#{type}", body)
 
       case type
       when "active_expectations"
@@ -142,6 +162,7 @@ module MockServerClient
       raise "Bad request format: #{resp.body}"
     end
 
+    # Calls to mock server are "successful" with these response codes
     SAFE_STATUS_CODE = [406] + (200..299).to_a
 
     private def client_put(path, body = nil)

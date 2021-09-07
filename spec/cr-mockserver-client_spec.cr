@@ -49,7 +49,7 @@ describe MockServerClient do
 
   it "retrieves logs, recorded_expectations, and request_responses" do
     regular_client.get("/")
-    client.expectation(path: "/nope", responseStatusCode: 200)
+    exps = client.expectation(path: "/nope", responseStatusCode: 200)
     regular_client.get("/nope")
     req_resps = client.retrieve("request_responses").as(Array(MockServerClient::RequestResponse))
 
@@ -59,10 +59,16 @@ describe MockServerClient do
 
     req_resps[1].httpRequest.path.should eq "/nope"
     req_resps[1].httpResponse.statusCode.should eq 200
+    expected = req_resps[1]
 
     client.retrieve("recorded_expectations").should be_empty # no proxy expectations
 
     client.retrieve("logs").empty?.should be_false
+
+    # Now get the requests_responses for the expectation we have
+    reqs = client.retrieve_requests(exps[0])
+    req_resps = client.retrieve_request_responses(exps[0])
+    req_resps[0].should eq expected
   end
 
   it "forwards" do
