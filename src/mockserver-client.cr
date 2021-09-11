@@ -20,8 +20,8 @@ module MockServerClient
       client_put("/mockserver/reset")
     end
 
-    def retrieve_active_expectations
-      retrieve("active_expectations").as(Array(Expectation))
+    def retrieve_active_expectations(exp : Expectation? = nil)
+      retrieve("active_expectations", exp.nil? ? nil : exp.to_json).as(Array(Expectation))
     end
 
     def retrieve_requests(exp : Expectation? = nil)

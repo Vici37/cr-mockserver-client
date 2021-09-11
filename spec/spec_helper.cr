@@ -1,7 +1,7 @@
 require "spec"
 require "docr"
 require "uuid"
-require "../src/cr-mockserver-client"
+require "../src/mockserver-client"
 
 api = Docr::API.new(Docr::Client.new)
 mockserver_id = UUID.random.to_s

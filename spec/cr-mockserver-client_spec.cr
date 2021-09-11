@@ -71,6 +71,20 @@ describe MockServerClient do
     req_resps[0].should eq expected
   end
 
+  it "retrieves active expectations" do
+    exp = client.expectation(path: "/yup", responseStatusCode: 200)
+
+    regular_client.get("/yup").status_code.should eq 200
+
+    reqs = client.retrieve_requests
+    reqs.size.should eq 1
+
+    actual_exp = client.retrieve_active_expectations(exp[0])
+
+    actual_exp.size.should eq 1
+    exp.should eq actual_exp
+  end
+
   it "forwards" do
     client.expectation(
       path: "/",
