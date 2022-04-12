@@ -33,13 +33,23 @@ client.bind(8080)
 
 regular_client.get("/") # 404
 
-client.expectation(path: "/", method: "GET", responseStatusCode: 200, responseBody: "success!")
+client.expectation(
+  # client.request is a handy wrapper around MockServerClient::HttpRequest.new(...)
+  http_request: client.request(path: "/", method: "GET"),
+  # same with client.response for HttpResponse
+  http_response: client.response(status_code: 200, body: "success!")
+)
 
 regular_client.get("/") # 200, body: "success!"
 
 # The `expectation` call is the same as:
 req = MockServerClient::HttpRequest.new(path: "/", method: "GET")
-resp = MockServerClient::HttpResponse.new(statusCode: 200, body: "success!")
+resp = MockServerClient::HttpResponse.new(status_code: 200, body: "success!")
 exp = MockServerClient::Expectation.new(req, resp)
 client.expectation(exp)
+
+# Due to most fields within mockserver being nullable, you can always use a `!` suffixed
+# call to get the non-nil value
+exp.http_request.class # HttpRequest | Nil
+exp.http_request!.class # HttpRequest
 ```
