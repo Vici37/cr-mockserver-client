@@ -5,6 +5,8 @@ development_dependencies:
   docr:
     github: Vici37/docr
     branch: master
+  ameba:
+    github: crystal-ameba/ameba
 
 authors:
   - Troy Sornson <troy@sornson.io>

@@ -6,14 +6,18 @@ describe MockServerClient do
 
   it "creates and retrieves expectations" do
     resp = client.expectation(
-      path: "/hello/world",
-      method: "GET",
-      responseBody: "world!"
+      http_request: client.request(
+        path: "/hello/world",
+        method: "GET",
+      ),
+      http_response: client.response(
+        body: "world!"
+      )
     )
 
     resp.size.should eq 1
     resp[0].id.should_not be_nil
-    resp[0].httpRequest!.path.should eq "/hello/world"
+    resp[0].http_request!.path.should eq "/hello/world"
 
     exps = client.retrieve("active_expectations")
     exps.size.should eq 1
@@ -49,16 +53,16 @@ describe MockServerClient do
 
   it "retrieves logs, recorded_expectations, and request_responses" do
     regular_client.get("/")
-    exps = client.expectation(path: "/nope", responseStatusCode: 200)
+    exps = client.expectation(http_request: client.request(path: "/nope"), http_response: client.response(status_code: 200))
     regular_client.get("/nope")
     req_resps = client.retrieve("request_responses").as(Array(MockServerClient::RequestResponse))
 
     req_resps.size.should eq 2
-    req_resps[0].httpRequest.path.should eq "/"
-    req_resps[0].httpResponse.statusCode.should eq 404
+    req_resps[0].http_request.path.should eq "/"
+    req_resps[0].http_response.status_code.should eq 404
 
-    req_resps[1].httpRequest.path.should eq "/nope"
-    req_resps[1].httpResponse.statusCode.should eq 200
+    req_resps[1].http_request.path.should eq "/nope"
+    req_resps[1].http_response.status_code.should eq 200
     expected = req_resps[1]
 
     client.retrieve("recorded_expectations").should be_empty # no proxy expectations
@@ -66,13 +70,16 @@ describe MockServerClient do
     client.retrieve("logs").empty?.should be_false
 
     # Now get the requests_responses for the expectation we have
-    reqs = client.retrieve_requests(exps[0])
+    client.retrieve_requests(exps[0])
     req_resps = client.retrieve_request_responses(exps[0])
     req_resps[0].should eq expected
   end
 
   it "retrieves active expectations" do
-    exp = client.expectation(path: "/yup", responseStatusCode: 200)
+    exp = client.expectation(
+      http_request: client.request(path: "/yup"),
+      http_response: client.response(status_code: 200)
+    )
 
     regular_client.get("/yup").status_code.should eq 200
 
@@ -87,10 +94,8 @@ describe MockServerClient do
 
   it "forwards" do
     client.expectation(
-      path: "/",
-      forwardHost: "google.com",
-      forwardPort: 443,
-      forwardScheme: "HTTPS"
+      http_request: client.request(path: "/"),
+      http_forward: client.forward(host: "google.com", port: 443, scheme: "HTTPS")
     )
 
     resp = regular_client.get("/")

@@ -59,44 +59,20 @@ module MockServerClient
       end
     end
 
-    def expectation(
-      path : String? = nil,
-      method : String? = nil,
-      requestBody : BodyMatchers? = nil,
-      requestPathParameters : Hash(String, Array(String))? = nil,
-      requestHeaders : Hash(String, Array(String))? = nil,
-      requestCookies : Hash(String, String)? = nil,
-      requestQueryParams : Hash(String, Array(String))? = nil,
+    def request(**kwargs)
+      HttpRequest.new(**kwargs)
+    end
 
-      forwardHost : String? = nil,
-      forwardPort : Int32? = nil,
-      forwardScheme : String? = nil,
+    def response(**kwargs)
+      HttpResponse.new(**kwargs)
+    end
 
-      responseStatusCode : Int32? = nil,
-      responseBody : BodyResponses? = nil,
-      responseHeaders : Hash(String, Array(String))? = nil,
-      responseCookies : Hash(String, String)? = nil,
-      delay : Delay? = nil
-    )
-      req = nil
-      if path || method || requestBody || requestPathParameters || requestQueryParams || requestHeaders || requestCookies
-        req = HttpRequest.new(path: path, method: method, body: requestBody,
-          pathParameters: requestPathParameters, queryStringParameters: requestQueryParams,
-          headers: requestHeaders, cookies: requestCookies)
-      end
+    def forward(**kwargs)
+      HttpForward.new(**kwargs)
+    end
 
-      resp = nil
-      if responseStatusCode || responseBody || responseHeaders || delay
-        resp = HttpResponse.new(statusCode: responseStatusCode, body: responseBody,
-          headers: responseHeaders, cookies: responseCookies, delay: delay)
-      end
-
-      forward = nil
-      if forwardHost || forwardPort || forwardScheme
-        forward = HttpForward.new(host: forwardHost, port: forwardPort, scheme: forwardScheme)
-      end
-
-      exp = Expectation.new(req, resp, forward)
+    def expectation(**kwargs)
+      exp = Expectation.new(**kwargs)
       expectation(exp)
     end
 
@@ -121,23 +97,28 @@ module MockServerClient
       status
     end
 
-    def verify(expectation : Expectation | HttpRequest | String, atLeast : Int32? = nil, atMost : Int32? = nil)
-      raise "Require to specify atLeast parameter and / or atMost" if atMost.nil? && atLeast.nil?
+    def verify(expectation : Expectation | ExpectationId | HttpRequest | String, **kwargs)
+      raise "Require to specify at_least parameter and / or at_most" if kwargs.empty? || (!kwargs.has_key?(:at_most) && !kwargs.has_key?(:at_least))
 
       if expectation.is_a?(Expectation)
         resp = client_put("/mockserver/verify", Verification.new(
-          expectationId: ExpectationId.new(expectation),
-          times: VerificationTimes.new(atMost: atMost, atLeast: atLeast)).to_json
+          expectation_id: ExpectationId.new(expectation),
+          times: VerificationTimes.new(**kwargs)).to_json
+        )
+      elsif expectation.is_a?(ExpectationId)
+        resp = client_put("/mockserver/verify", Verification.new(
+          expectation_id: expectation,
+          times: VerificationTimes.new(**kwargs)).to_json
         )
       elsif expectation.is_a?(HttpRequest)
         resp = client_put("/mockserver/verify", Verification.new(
-          httpRequest: expectation,
-          times: VerificationTimes.new(atMost: atMost, atLeast: atLeast)).to_json
+          http_request: expectation,
+          times: VerificationTimes.new(**kwargs)).to_json
         )
       elsif expectation.is_a?(String)
         resp = client_put("/mockserver/verify", Verification.new(
-          expectationId: ExpectationId.new(expectation),
-          times: VerificationTimes.new(atMost: atMost, atLeast: atLeast)).to_json
+          expectation_id: ExpectationId.new(expectation),
+          times: VerificationTimes.new(**kwargs)).to_json
         )
       else
         raise "No handler for type #{expectation.class}"
@@ -150,9 +131,9 @@ module MockServerClient
 
     def verify_sequence(sequence : Array(HttpRequest) | Array(Expectation))
       if sequence.is_a?(Array(HttpRequest))
-        verification = VerificationSequence.new(httpRequests: sequence)
+        verification = VerificationSequence.new(http_requests: sequence)
       elsif sequence.is_a?(Array(Expectation))
-        verification = VerificationSequence.new(httpRequests: sequence.map { |e| e.httpRequest! })
+        verification = VerificationSequence.new(http_requests: sequence.map(&.http_request!))
       end
 
       resp = client_put("/mockserver/verifySequence", verification.to_json)

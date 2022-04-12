@@ -10,7 +10,7 @@ client = MockServerClient::Client.new(port: 1090)
 Spec.before_suite do
   containers = Docr.command.ps.execute
 
-  unless containers.find { |c| c.image =~ /mockserver\/mockserver(:latest)?/ && c.ports.find { |p| p.public_port == 1090 } }
+  if !containers.find { |c| c.image =~ /mockserver\/mockserver(:latest)?/ && c.ports.find { |p| p.public_port == 1090 } }
     Docr.command.run
       .image("mockserver/mockserver:latest")
       .port("1090", "1080/tcp")
@@ -19,7 +19,7 @@ Spec.before_suite do
       .execute
 
     attempts = 0
-    while true
+    loop do
       begin
         client.status
         break

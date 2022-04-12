@@ -6,10 +6,8 @@ describe MockServerClient do
 
   it "query params supported" do
     client.expectation(
-      path: "/test1/test2",
-      method: "GET",
-      requestQueryParams: {"var" => ["foo|bar"]},
-      responseBody: "success!"
+      http_request: client.request(path: "/test1/test2", method: "GET", query_string_parameters: {"var" => ["foo|bar"]}),
+      http_response: client.response(body: "success!")
     )
 
     resp = regular_client.get("/test1/test2")
@@ -27,7 +25,10 @@ describe MockServerClient do
   end
 
   it "header matchers supported" do
-    client.expectation(responseStatusCode: 200, requestHeaders: {"X-TEST" => ["totes"]})
+    client.expectation(
+      http_request: client.request(headers: {"X-TEST" => ["totes"]}),
+      http_response: client.response(status_code: 200)
+    )
 
     resp = regular_client.get("/", HTTP::Headers{"X-TEST" => ["totes"]})
     resp.status_code.should eq 200
@@ -40,28 +41,28 @@ describe MockServerClient do
   end
 
   it "serializes all request body matcher types" do
-    client.expectation(responseStatusCode: 200, requestBody: "response1")
-    client.expectation(responseStatusCode: 200, requestBody: JSON.parse({response: "one"}.to_json))
-    client.expectation(responseStatusCode: 200, requestBody: MockServerClient::JsonPathBodyMatcher.new("$.store.book[?(@.price < 10)]"))
-    client.expectation(responseStatusCode: 200, requestBody: MockServerClient::BinaryBodyMatcher.new("ZnVjawo="))
-    client.expectation(responseStatusCode: 200, requestBody: MockServerClient::ParametersBodyMatcher.new({"one" => ["two"]}))
-    client.expectation(responseStatusCode: 200, requestBody: MockServerClient::RegexBodyMatcher.new(".*"))
-    client.expectation(responseStatusCode: 200, requestBody: MockServerClient::StringBodyMatcher.new("totes"))
-    client.expectation(responseStatusCode: 200, requestBody: MockServerClient::XpathBodyMatcher.new("//"))
-    client.expectation(responseStatusCode: 200, requestBody: MockServerClient::XmlBodyMatcher.new("<totes></totes>"))
-    client.expectation(responseStatusCode: 200, requestBody: MockServerClient::JsonBodyMatcher.new(JSON.parse("{}")))
+    client.expectation(http_response: client.response(status_code: 200, body: "response1"))
+    client.expectation(http_response: client.response(status_code: 200, body: JSON.parse({response: "one"}.to_json)))
+    client.expectation(http_response: client.response(status_code: 200, body: MockServerClient::JsonPathBodyMatcher.new("$.store.book[?(@.price < 10)]")))
+    client.expectation(http_response: client.response(status_code: 200, body: MockServerClient::BinaryBodyMatcher.new("ZnVjawo=")))
+    client.expectation(http_response: client.response(status_code: 200, body: MockServerClient::ParametersBodyMatcher.new({"one" => ["two"]})))
+    client.expectation(http_response: client.response(status_code: 200, body: MockServerClient::RegexBodyMatcher.new(".*")))
+    client.expectation(http_response: client.response(status_code: 200, body: MockServerClient::StringBodyMatcher.new("totes")))
+    client.expectation(http_response: client.response(status_code: 200, body: MockServerClient::XpathBodyMatcher.new("//")))
+    client.expectation(http_response: client.response(status_code: 200, body: MockServerClient::XmlBodyMatcher.new("<totes></totes>")))
+    client.expectation(http_response: client.response(status_code: 200, body: MockServerClient::JsonBodyMatcher.new(JSON.parse("{}"))))
 
     exps = client.retrieve(type: "active_expectations")
     exps.size.should eq 10
   end
 
   it "serializes all response body types" do
-    client.expectation(responseBody: "response1")
-    client.expectation(responseBody: JSON.parse({response: "one"}.to_json))
-    client.expectation(responseBody: MockServerClient::BinaryBodyMatcher.new("ZnVjawo="))
-    client.expectation(responseBody: MockServerClient::StringBodyMatcher.new("totes"))
-    client.expectation(responseBody: MockServerClient::XmlBodyMatcher.new("<totes></totes>"))
-    client.expectation(responseBody: MockServerClient::JsonBodyMatcher.new(JSON.parse("{}")))
+    client.expectation(http_response: client.response(body: "response1"))
+    client.expectation(http_response: client.response(body: JSON.parse({response: "one"}.to_json)))
+    client.expectation(http_response: client.response(body: MockServerClient::BinaryBodyMatcher.new("ZnVjawo=")))
+    client.expectation(http_response: client.response(body: MockServerClient::StringBodyMatcher.new("totes")))
+    client.expectation(http_response: client.response(body: MockServerClient::XmlBodyMatcher.new("<totes></totes>")))
+    client.expectation(http_response: client.response(body: MockServerClient::JsonBodyMatcher.new(JSON.parse("{}"))))
 
     exps = client.retrieve(type: "active_expectations")
     exps.size.should eq 6

@@ -1,51 +1,51 @@
 require "json"
 
 module MockServerClient
-  record Expectation,
-    httpRequest : HttpRequest? = nil,
-    httpResponse : HttpResponse? = nil,
-    httpForward : HttpForward? = nil,
-    httpOverrideForward : HttpOverrideForwardRequest? = nil,
-    id : String? = nil,
-    times : Times? = nil,
-    priority : Int32? = nil do
-    include JSON::Serializable
+  macro json_record(name, *properties)
+    struct {{name.id}}
+      include JSON::Serializable
 
-    def httpRequest!
-      @httpRequest.not_nil!
-    end
+      {% for property in properties %}
+        {% if property.is_a?(TypeDeclaration) %}
+        @[JSON::Field(key: "{{property.var.id.camelcase(lower: true)}}")]
+        getter {{property}}
 
-    def httpResponse!
-      @httpResponse.not_nil!
-    end
+        {% if property.type.id.ends_with?("::Nil") %}
+        def {{property.var.id}}!
+          @{{property.var.id}}.not_nil!
+        end
+        {% end %}
+        {% else %}
+        @[JSON::Field(key: "{{property.target.id.camelcase(lower: true)}}")]
+        getter {{property}}
+        {% end %}
 
-    def httpForward!
-      @httpForward.not_nil!
-    end
+      {% end %}
 
-    def httpOverrideForward!
-      @httpOverrideForward.not_nil!
-    end
+      def initialize({{
+                       *properties.map do |field|
+                         "@#{field.id}".id
+                       end
+                     }})
+      end
 
-    def id!
-      @id.not_nil!
-    end
-
-    def times!
-      @times.not_nil!
-    end
-
-    def priority!
-      @priority.not_nil!
+      {{yield}}
     end
   end
 
-  record ExpectationId,
-    id : String do
-    include JSON::Serializable
+  json_record Expectation,
+    http_request : HttpRequest? = nil,
+    http_response : HttpResponse? = nil,
+    http_forward : HttpForward? = nil,
+    http_override_forward : HttpOverrideForward? = nil,
+    id : String? = nil,
+    times : Times? = nil,
+    priority : Int32? = nil
 
+  json_record ExpectationId,
+    id : String do
     def initialize(exp : Expectation)
-      @id = exp.id.not_nil!
+      @id = exp.id!
     end
   end
 
@@ -53,60 +53,52 @@ module MockServerClient
                        ParametersBodyMatcher | RegexBodyMatcher | StringBodyMatcher |
                        XpathBodyMatcher | XmlBodyMatcher | JsonBodyMatcher
 
-  alias BodyResponses = String | JSON::Any | BinaryBodyMatcher | JsonBodyMatcher | StringBodyMatcher | XmlBodyMatcher
+  alias BodyResponses = String | JSON::Any | BinaryBodyMatcher | JsonBodyMatcher | JsonPathBodyMatcher |
+                        ParametersBodyMatcher | RegexBodyMatcher | StringBodyMatcher | XmlBodyMatcher |
+                        XpathBodyMatcher
 
-  record HttpRequest,
+  json_record HttpRequest,
     method : String? = nil,
     path : String? = nil,
     body : BodyMatchers? = nil,
-    pathParameters : Hash(String, Array(String))? = nil,
-    queryStringParameters : Hash(String, Array(String))? = nil,
+    path_parameters : Hash(String, Array(String))? = nil,
+    query_string_parameters : Hash(String, Array(String))? = nil,
     headers : Hash(String, Array(String))? = nil,
     cookies : Hash(String, String)? = nil,
-    socketAddress : SocketAddress? = nil,
+    socket_address : SocketAddress? = nil,
     secure : Bool = false,
-    keepAlive : Bool = true do
-    include JSON::Serializable
-  end
+    keep_alive : Bool = true
 
-  record HttpResponse,
-    statusCode : Int32? = nil,
+  json_record HttpResponse,
+    status_code : Int32? = nil,
     body : BodyResponses? = nil,
     headers : Hash(String, Array(String))? = nil,
     cookies : Hash(String, String)? = nil,
-    connectionOptions : ConnectionOptions? = nil,
+    connection_options : ConnectionOptions? = nil,
     delay : Delay? = nil do
     include JSON::Serializable
   end
 
-  record Delay,
-    timeUnit : String,
-    value : Int32 do
-    include JSON::Serializable
-  end
+  json_record Delay,
+    time_unit : String,
+    value : Int32
 
-  record SocketAddress,
+  json_record SocketAddress,
     host : String,
     port : Int32?,
-    scheme : String do
-    include JSON::Serializable
-  end
+    scheme : String
 
-  record Ports,
-    ports : Array(Int32) do
-    include JSON::Serializable
-  end
+  json_record Ports,
+    ports : Array(Int32)
 
-  record ConnectionOptions,
-    suppressContentLengthHeader : Bool? = nil,
-    contentLengthHeaderOverride : Bool? = nil,
-    suppressConnectionHeader : Bool? = nil,
-    chunkSize : Int32? = nil,
-    keepAliveOverride : Bool? = nil,
-    closeSocket : Bool? = nil,
-    closeSocketDelay : Delay? = nil do
-    include JSON::Serializable
-  end
+  json_record ConnectionOptions,
+    suppress_content_length_header : Bool? = nil,
+    content_length_header_override : Bool? = nil,
+    suppress_connection_header : Bool? = nil,
+    chunk_size : Int32? = nil,
+    keep_alive_override : Bool? = nil,
+    close_socket : Bool? = nil,
+    close_socket_delay : Delay? = nil
 
   enum BodyTypes
     BINARY
@@ -119,134 +111,73 @@ module MockServerClient
     XPATH
   end
 
-  class BinaryBodyMatcher
-    include JSON::Serializable
+  json_record BinaryBodyMatcher,
+    base_64_bytes : String,
+    content_type : String? = nil,
+    type = BodyTypes::BINARY
 
-    @type = BodyTypes::BINARY
-    property base64Bytes : String
-    property contentType : String?
+  json_record JsonBodyMatcher,
+    json : JSON::Any,
+    content_type : String? = nil,
+    match_type : String? = nil,
+    type = BodyTypes::JSON
 
-    def initialize(@base64Bytes, @contentType = nil)
-    end
-  end
+  json_record JsonPathBodyMatcher,
+    json_path : String,
+    type = BodyTypes::JSON_PATH
 
-  class JsonBodyMatcher
-    include JSON::Serializable
-    @type = BodyTypes::JSON
-    property json : JSON::Any
-    property contentType : String?
-    property matchType : String?
+  json_record ParametersBodyMatcher,
+    parameters : Hash(String, Array(String)),
+    type = BodyTypes::PARAMETERS
 
-    def initialize(@json, @contentType = nil, @matchType = nil)
-    end
-  end
+  json_record RegexBodyMatcher,
+    regex : String,
+    type = BodyTypes::REGEX
 
-  class JsonPathBodyMatcher
-    include JSON::Serializable
+  json_record StringBodyMatcher,
+    string : String,
+    content_type : String? = nil,
+    sub_string : Bool? = nil,
+    type = BodyTypes::STRING
 
-    @type = BodyTypes::JSON_PATH
-    property jsonPath : String
+  json_record XmlBodyMatcher,
+    xml : String,
+    content_type : String? = nil,
+    type = BodyTypes::XML
 
-    def initialize(@jsonPath)
-    end
-  end
+  json_record XpathBodyMatcher,
+    xpath : String,
+    type = BodyTypes::XPATH
 
-  class ParametersBodyMatcher
-    include JSON::Serializable
+  json_record Verification,
+    expectation_id : ExpectationId? = nil,
+    http_request : HttpRequest? = nil,
+    times : VerificationTimes? = nil
 
-    @type = BodyTypes::PARAMETERS
-    property parameters : Hash(String, Array(String))
+  json_record VerificationTimes,
+    at_least : Int32? = nil,
+    at_most : Int32? = nil
 
-    def initialize(@parameters)
-    end
-  end
+  json_record VerificationSequence,
+    expectation_ids : Array(ExpectationId)? = nil,
+    http_requests : Array(HttpRequest)? = nil
 
-  class RegexBodyMatcher
-    include JSON::Serializable
-
-    @type = BodyTypes::REGEX
-    property regex : String
-
-    def initialize(@regex)
-    end
-  end
-
-  class StringBodyMatcher
-    include JSON::Serializable
-
-    @type = BodyTypes::STRING
-    property string : String
-    property contentType : String?
-    property subString : Bool?
-
-    def initialize(@string, @contentType = nil, @subString = nil)
-    end
-  end
-
-  class XmlBodyMatcher
-    include JSON::Serializable
-
-    @type = BodyTypes::XML
-    property xml : String
-    property contentType : String?
-
-    def initialize(@xml, @contentType = nil)
-    end
-  end
-
-  class XpathBodyMatcher
-    include JSON::Serializable
-
-    @type = BodyTypes::XPATH
-    property xpath : String
-
-    def initialize(@xpath)
-    end
-  end
-
-  record Verification,
-    expectationId : ExpectationId? = nil,
-    httpRequest : HttpRequest? = nil,
-    times : VerificationTimes? = nil do
-    include JSON::Serializable
-  end
-
-  record VerificationTimes,
-    atLeast : Int32? = nil,
-    atMost : Int32? = nil do
-    include JSON::Serializable
-  end
-
-  record VerificationSequence,
-    expectationIds : Array(ExpectationId)? = nil,
-    httpRequests : Array(HttpRequest)? = nil do
-    include JSON::Serializable
-  end
-
-  record RequestResponse,
+  json_record RequestResponse,
     timestamp : String,
-    httpRequest : HttpRequest,
-    httpResponse : HttpResponse do
-    include JSON::Serializable
-  end
+    http_request : HttpRequest,
+    http_response : HttpResponse
 
-  record Times,
-    remainingTimes : Int32? = nil,
-    unlimited : Bool? = true do
-    include JSON::Serializable
-  end
+  json_record Times,
+    remaining_times : Int32? = nil,
+    unlimited : Bool? = true
 
-  record HttpForward,
+  json_record HttpForward,
     host : String? = nil,
     port : Int32? = nil,
-    scheme : String? = nil do
-    include JSON::Serializable
-  end
+    scheme : String? = nil
 
-  record HttpOverrideForwardRequest,
+  json_record HttpOverrideForward,
     delay : Delay? = nil,
-    httpRequest : HttpRequest? = nil,
-    httpRespons : HttpResponse? = nil do
-    include JSON::Serializable
-  end
+    http_request : HttpRequest? = nil,
+    http_response : HttpResponse? = nil
 end
