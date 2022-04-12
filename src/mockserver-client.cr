@@ -6,6 +6,7 @@ module MockServerClient
 
   class Client
     def initialize(@mockserver_url : String = "localhost", @port : Int32 = 1080)
+      @logger = ::Log.for(Client)
     end
 
     def clear(id : String)
@@ -147,7 +148,10 @@ module MockServerClient
     SAFE_STATUS_CODE = [406] + (200..299).to_a
 
     private def client_put(path, body = nil)
-      resp = HTTP::Client.put("#{@mockserver_url}:#{@port}#{path}", nil, body)
+      url = "#{@mockserver_url}:#{@port}#{path}"
+      @logger.debug { "Making put request to mockserver to #{url}" }
+      resp = HTTP::Client.put(url, nil, body)
+      @logger.debug { "Received status code #{resp.status_code}, considered successful: #{SAFE_STATUS_CODE.includes?(resp.status_code)}" }
       return resp if SAFE_STATUS_CODE.includes?(resp.status_code)
       raise MockServerApiException.new(resp.body)
     end
